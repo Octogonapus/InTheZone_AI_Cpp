@@ -6,6 +6,8 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include "grip/ConePipeline.h"
+#include "grip/RedMobileGoalPipeline.h"
+#include "grip/BlueMobileGoalPipeline.h"
 #include "vJoy.h"
 
 HWND itzHWND;
@@ -83,7 +85,7 @@ cv::Mat screencap(HWND hwnd) {
     return src;
 }
 
-int main() {
+int main(int argc, char **argv) {
     //Try to get hwnd for virtual worlds
     HWND hFoundWnd = NULL;
     ::EnumWindows(&FindTheDesiredWnd, reinterpret_cast<LPARAM>(&hFoundWnd));
@@ -95,6 +97,8 @@ int main() {
     vJoy vj(1);
 
     grip::ConePipeline conePipeline;
+    grip::RedMobileGoalPipeline redMobileGoalPipeline;
+    grip::BlueMobileGoalPipeline blueMobileGoalPipeline;
 
     do {
         cv::imshow("ITZ_AI_CPP", screencap(itzHWND));
