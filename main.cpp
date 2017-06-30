@@ -1,10 +1,15 @@
 #include <iostream>
 #include <d3d9.h>
 #include <vector>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <Windows.h>
 
 #include "ConePipeline.h"
 
 HWND itzHWND;
+
 BOOL CALLBACK FindTheDesiredWnd(HWND hWnd, LPARAM lParam) {
     *(reinterpret_cast<HWND *>(lParam)) = hWnd;
 
@@ -26,53 +31,74 @@ BOOL CALLBACK FindTheDesiredWnd(HWND hWnd, LPARAM lParam) {
     return TRUE;
 }
 
-void screencap(HWND hWnd) {
-    RECT DesktopParams;
-    HDC DevC = GetDC(hWnd);
-    GetWindowRect(hWnd, &DesktopParams);
-    DWORD Width = DesktopParams.right - DesktopParams.left;
-    DWORD Height = DesktopParams.bottom - DesktopParams.top;
+cv::Mat screencap(HWND hwnd) {
+    HDC hwindowDC, hwindowCompatibleDC;
 
-    DWORD FileSize =
-            sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + (sizeof(RGBTRIPLE) + 1 * (Width * Height * 4));
-    char *BmpFileData = (char *) GlobalAlloc(0x0040, FileSize);
+    int height, width, srcheight, srcwidth;
+    HBITMAP hbwindow;
+    cv::Mat src;
+    BITMAPINFOHEADER bi;
 
-    PBITMAPFILEHEADER BFileHeader = (PBITMAPFILEHEADER) BmpFileData;
-    PBITMAPINFOHEADER BInfoHeader = (PBITMAPINFOHEADER) &BmpFileData[sizeof(BITMAPFILEHEADER)];
+    hwindowDC = GetDC(hwnd);
+    hwindowCompatibleDC = CreateCompatibleDC(hwindowDC);
+    SetStretchBltMode(hwindowCompatibleDC, COLORONCOLOR);
 
-    BFileHeader->bfType = 0x4D42; // BM
-    BFileHeader->bfSize = sizeof(BITMAPFILEHEADER);
-    BFileHeader->bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+    RECT windowsize; // get the height and width of the screen
+    GetClientRect(hwnd, &windowsize);
 
-    BInfoHeader->biSize = sizeof(BITMAPINFOHEADER);
-    BInfoHeader->biPlanes = 1;
-    BInfoHeader->biBitCount = 24;
-    BInfoHeader->biCompression = BI_RGB;
-    BInfoHeader->biHeight = Height;
-    BInfoHeader->biWidth = Width;
+    srcheight = windowsize.bottom;
+    srcwidth = windowsize.right;
+    height = windowsize.bottom;
+    width = windowsize.right;
 
-    RGBTRIPLE *Image = (RGBTRIPLE *) &BmpFileData[sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER)];
-    RGBTRIPLE color;
+    src.create(height, width, CV_8UC4);
 
-    HDC CaptureDC = CreateCompatibleDC(DevC);
-    HBITMAP CaptureBitmap = CreateCompatibleBitmap(DevC, Width, Height);
-    SelectObject(CaptureDC, CaptureBitmap);
-    BitBlt(CaptureDC, 0, 0, Width, Height, DevC, 0, 0, SRCCOPY | CAPTUREBLT);
-    GetDIBits(CaptureDC, CaptureBitmap, 0, Height, Image, (LPBITMAPINFO) BInfoHeader, DIB_RGB_COLORS);
+    // create a bitmap
+    hbwindow = CreateCompatibleBitmap(hwindowDC, width, height);
+    bi.biSize = sizeof(BITMAPINFOHEADER); //http://msdn.microsoft.com/en-us/library/windows/window/dd183402%28v=vs.85%29.aspx
+    bi.biWidth = width;
+    bi.biHeight = -height; //this is the line that makes it draw upside down or not
+    bi.biPlanes = 1;
+    bi.biBitCount = 32;
+    bi.biCompression = BI_RGB;
+    bi.biSizeImage = 0;
+    bi.biXPelsPerMeter = 0;
+    bi.biYPelsPerMeter = 0;
+    bi.biClrUsed = 0;
+    bi.biClrImportant = 0;
 
-    DWORD Junk;
-    HANDLE FH = CreateFileA("hello.bmp", GENERIC_WRITE, FILE_SHARE_WRITE, 0, CREATE_ALWAYS, 0, 0);
-    WriteFile(FH, BmpFileData, FileSize, &Junk, 0);
-    CloseHandle(FH);
-    GlobalFree(BmpFileData);
+    // use the previously created device context with the bitmap
+    SelectObject(hwindowCompatibleDC, hbwindow);
+    // copy from the window device context to the bitmap device context
+    StretchBlt(hwindowCompatibleDC, 0, 0, width, height, hwindowDC, 0, 0, srcwidth, srcheight,
+               SRCCOPY); //change SRCCOPY to NOTSRCCOPY for wacky colors !
+    GetDIBits(hwindowCompatibleDC, hbwindow, 0, height, src.data, (BITMAPINFO *) &bi,
+              DIB_RGB_COLORS);  //copy from hwindowCompatibleDC to hbwindow
+
+    // avoid memory leak
+    DeleteObject(hbwindow);
+    DeleteDC(hwindowCompatibleDC);
+    ReleaseDC(hwnd, hwindowDC);
+
+    return src;
 }
 
 int main() {
-    grip::ConePipeline conePipeline;
+    //Try to get hwnd for virtual worlds
     HWND hFoundWnd = NULL;
     ::EnumWindows(&FindTheDesiredWnd, reinterpret_cast<LPARAM>(&hFoundWnd));
-    if (hFoundWnd != NULL) {
-        screencap(itzHWND);
+    if (hFoundWnd == NULL) {
+        std::cerr << "Could not get HWND for virtual worlds window" << std::endl;
+        return 1;
     }
+
+    grip::ConePipeline conePipeline;
+
+    do {
+        cv::imshow("ITZ_AI_CPP", screencap(itzHWND));
+    } while (cv::waitKey(1) != 27);
+
+    cv::destroyAllWindows();
+
     return 0;
 }
