@@ -10,6 +10,9 @@
 #include "grip/BlueMobileGoalPipeline.h"
 #include "vJoy.h"
 
+using namespace cv;
+using namespace grip;
+
 HWND itzHWND;
 
 BOOL CALLBACK FindTheDesiredWnd(HWND hWnd, LPARAM lParam) {
@@ -85,6 +88,82 @@ cv::Mat screencap(HWND hwnd) {
     return src;
 }
 
+Mat blankImage = imread("img/blank.png");
+
+Mat extraProcessingCones(ConePipeline pipeline) {
+    Mat image = blankImage.clone();
+    drawContours(image, *pipeline.GetFilterContoursOutput(), -1, Scalar(0, 230, 230), FILLED);
+    return image;
+}
+
+Mat extraProcessingRedMobileGoals(RedMobileGoalPipeline pipeline) {
+    SimpleBlobDetector::Params params;
+    params.filterByColor = 1;
+    params.blobColor = 255;
+    params.minThreshold = 10;
+    params.maxThreshold = 220;
+    params.filterByArea = true;
+    params.minArea = 190;
+    params.filterByCircularity = true;
+    params.minCircularity = 0.25;
+    params.maxCircularity = 10000.0;
+    params.filterByConvexity = false;
+    params.filterByInertia = false;
+
+    Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
+
+    std::vector<KeyPoint> keypoints;
+    detector->detect(*pipeline.GetRgbThresholdOutput(), keypoints);
+
+    //Remove outlying blobs
+    for (std::vector<KeyPoint>::reverse_iterator it = keypoints.rbegin(); it != keypoints.rend(); it++) {
+        Point2f coord = it->pt;
+        if (coord.x > 730 && coord.y < 25) {
+            keypoints.erase(it.base());
+        } else if (coord.x < 70 && coord.y > 560) {
+            keypoints.erase(it.base());
+        }
+    }
+
+    Mat image = blankImage.clone();
+    drawKeypoints(*pipeline.GetRgbThresholdOutput(), keypoints, image, Scalar(0, 0, 255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    return image;
+}
+
+Mat extraProcessingBlueMobileGoals(BlueMobileGoalPipeline pipeline) {
+    SimpleBlobDetector::Params params;
+    params.filterByColor = 1;
+    params.blobColor = 255;
+    params.minThreshold = 10;
+    params.maxThreshold = 220;
+    params.filterByArea = true;
+    params.minArea = 190;
+    params.filterByCircularity = true;
+    params.minCircularity = 0.25;
+    params.maxCircularity = 10000.0;
+    params.filterByConvexity = false;
+    params.filterByInertia = false;
+
+    Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
+
+    std::vector<KeyPoint> keypoints;
+    detector->detect(*pipeline.GetRgbThresholdOutput(), keypoints);
+
+    //Remove outlying blobs
+    for (std::vector<KeyPoint>::reverse_iterator it = keypoints.rbegin(); it != keypoints.rend(); it++) {
+        Point2f coord = it->pt;
+        if (coord.x > 730 && coord.y < 25) {
+            keypoints.erase(it.base());
+        } else if (coord.x < 70 && coord.y > 560) {
+            keypoints.erase(it.base());
+        }
+    }
+
+    Mat image = blankImage.clone();
+    drawKeypoints(*pipeline.GetRgbThresholdOutput(), keypoints, image, Scalar(255, 0, 0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    return image;
+}
+
 int main(int argc, char **argv) {
     //Try to get hwnd for virtual worlds
     HWND hFoundWnd = NULL;
@@ -94,18 +173,34 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    //Grab virtual joystick 1
     vJoy vj(1);
 
-    grip::ConePipeline conePipeline;
-    grip::RedMobileGoalPipeline redMobileGoalPipeline;
-    grip::BlueMobileGoalPipeline blueMobileGoalPipeline;
+    //Pipelines
+    ConePipeline conePipeline;
+    RedMobileGoalPipeline redMobileGoalPipeline;
+    BlueMobileGoalPipeline blueMobileGoalPipeline;
 
+    //Main loop
     do {
-        cv::imshow("ITZ_AI_CPP", screencap(itzHWND));
-        vj.setDefaults();
-    } while (cv::waitKey(1) != 27);
+        Mat frame = screencap(itzHWND);
 
-    cv::destroyAllWindows();
+        conePipeline.Process(frame);
+        redMobileGoalPipeline.Process(frame);
+        blueMobileGoalPipeline.Process(frame);
+
+        std::vector<Mat> images = std::vector<Mat>(6);
+        images.push_back(frame);
+        images.push_back(extraProcessingCones(conePipeline));
+        images.push_back(extraProcessingRedMobileGoals(redMobileGoalPipeline));
+        images.push_back(extraProcessingBlueMobileGoals(blueMobileGoalPipeline));
+
+        imshow("ITZ_AI_CPP", screencap(itzHWND));
+        vj.setDefaults();
+    } while (waitKey(1) != 27);
+
+    //Clean up
+    destroyAllWindows();
     delete &vj;
 
     return 0;
