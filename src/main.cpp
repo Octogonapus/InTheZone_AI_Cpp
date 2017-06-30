@@ -88,10 +88,11 @@ cv::Mat screencap(HWND hwnd) {
     return src;
 }
 
-Mat blankImage = imread("img/blank.png");
+Mat blankImage = imread("../img/blank.png");
 
 Mat extraProcessingCones(ConePipeline pipeline) {
-    Mat image = blankImage.clone();
+    Mat image;
+    blankImage.copyTo(image);
     drawContours(image, *pipeline.GetFilterContoursOutput(), -1, Scalar(0, 230, 230), FILLED);
     return image;
 }
@@ -113,6 +114,7 @@ Mat extraProcessingRedMobileGoals(RedMobileGoalPipeline pipeline) {
     Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
 
     std::vector<KeyPoint> keypoints;
+    medianBlur(*pipeline.GetRgbThresholdOutput(), *pipeline.GetRgbThresholdOutput(), 3);
     detector->detect(*pipeline.GetRgbThresholdOutput(), keypoints);
 
     //Remove outlying blobs
@@ -126,7 +128,8 @@ Mat extraProcessingRedMobileGoals(RedMobileGoalPipeline pipeline) {
     }
 
     Mat image = blankImage.clone();
-    drawKeypoints(*pipeline.GetRgbThresholdOutput(), keypoints, image, Scalar(0, 0, 255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    drawKeypoints(*pipeline.GetRgbThresholdOutput(), keypoints, image, Scalar(0, 0, 255),
+                  DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
     return image;
 }
 
@@ -147,6 +150,7 @@ Mat extraProcessingBlueMobileGoals(BlueMobileGoalPipeline pipeline) {
     Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
 
     std::vector<KeyPoint> keypoints;
+    medianBlur(*pipeline.GetRgbThresholdOutput(), *pipeline.GetRgbThresholdOutput(), 3);
     detector->detect(*pipeline.GetRgbThresholdOutput(), keypoints);
 
     //Remove outlying blobs
@@ -160,7 +164,8 @@ Mat extraProcessingBlueMobileGoals(BlueMobileGoalPipeline pipeline) {
     }
 
     Mat image = blankImage.clone();
-    drawKeypoints(*pipeline.GetRgbThresholdOutput(), keypoints, image, Scalar(255, 0, 0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    drawKeypoints(*pipeline.GetRgbThresholdOutput(), keypoints, image, Scalar(255, 0, 0),
+                  DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
     return image;
 }
 
@@ -182,21 +187,27 @@ int main(int argc, char **argv) {
     BlueMobileGoalPipeline blueMobileGoalPipeline;
 
     //Main loop
+    Mat temp1, temp2;
     do {
         Mat frame = screencap(itzHWND);
+        cvtColor(frame, frame, CV_BGRA2BGR);
 
         conePipeline.Process(frame);
         redMobileGoalPipeline.Process(frame);
         blueMobileGoalPipeline.Process(frame);
 
-        std::vector<Mat> images = std::vector<Mat>(6);
-        images.push_back(frame);
-        images.push_back(extraProcessingCones(conePipeline));
-        images.push_back(extraProcessingRedMobileGoals(redMobileGoalPipeline));
-        images.push_back(extraProcessingBlueMobileGoals(blueMobileGoalPipeline));
+        std::vector<Mat> images = std::vector<Mat>();
+        images.resize(4);
+        images[0] = frame;
+        images[1] = extraProcessingCones(conePipeline);
+        images[2] = extraProcessingRedMobileGoals(redMobileGoalPipeline);
+        images[3] = extraProcessingBlueMobileGoals(blueMobileGoalPipeline);
 
-        imshow("ITZ_AI_CPP", screencap(itzHWND));
-        vj.setDefaults();
+        hconcat(images[0], images[1], temp1);
+        hconcat(images[2], images[3], temp2);
+        vconcat(temp1, temp2, temp2);
+        resize(temp2, temp1, Size(960, 720), 0, 0, INTER_AREA);
+        imshow("ITZ_AI_CPP", temp1);
     } while (waitKey(1) != 27);
 
     //Clean up
