@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-set(SOURCE_FILES main.cpp ConePipeline.cpp)
+set(SOURCE_FILES src/main.cpp src/grip/ConePipeline.cpp)
 add_executable(itz_ai_cpp ${SOURCE_FILES})
 
 set(VJOY_INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}/vJoy_SDK/inc)

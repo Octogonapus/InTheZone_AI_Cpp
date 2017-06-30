@@ -4,10 +4,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <public.h>
-#include <vjoyinterface.h>
 
-#include "ConePipeline.h"
+#include "grip/ConePipeline.h"
+#include "vJoy.h"
 
 HWND itzHWND;
 
@@ -85,10 +84,6 @@ cv::Mat screencap(HWND hwnd) {
 }
 
 int main() {
-    if (vJoyEnabled()) {
-        std::cout << "eyy" << std::endl;
-    }
-
     //Try to get hwnd for virtual worlds
     HWND hFoundWnd = NULL;
     ::EnumWindows(&FindTheDesiredWnd, reinterpret_cast<LPARAM>(&hFoundWnd));
@@ -97,13 +92,17 @@ int main() {
         return 1;
     }
 
+    vJoy vj(1);
+
     grip::ConePipeline conePipeline;
 
     do {
         cv::imshow("ITZ_AI_CPP", screencap(itzHWND));
+        vj.setDefaults();
     } while (cv::waitKey(1) != 27);
 
     cv::destroyAllWindows();
+    delete &vj;
 
     return 0;
 }
