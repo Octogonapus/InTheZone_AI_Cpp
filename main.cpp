@@ -4,7 +4,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <Windows.h>
+#include <public.h>
+#include <vjoyinterface.h>
 
 #include "ConePipeline.h"
 
@@ -84,6 +85,10 @@ cv::Mat screencap(HWND hwnd) {
 }
 
 int main() {
+    if (vJoyEnabled()) {
+        std::cout << "eyy" << std::endl;
+    }
+
     //Try to get hwnd for virtual worlds
     HWND hFoundWnd = NULL;
     ::EnumWindows(&FindTheDesiredWnd, reinterpret_cast<LPARAM>(&hFoundWnd));
