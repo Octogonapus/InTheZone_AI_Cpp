@@ -4,11 +4,13 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <array>
 
 #include "grip/ConePipeline.h"
 #include "grip/RedMobileGoalPipeline.h"
 #include "grip/BlueMobileGoalPipeline.h"
 #include "vJoy.h"
+#include "HeapScanner.h"
 
 using namespace cv;
 using namespace grip;
@@ -177,6 +179,15 @@ int main(int argc, char **argv) {
         std::cerr << "Could not get HWND for virtual worlds window" << std::endl;
         return 1;
     }
+
+    HeapScanner hs(itzHWND);
+    std::array<byte, 6> cmp {50, 46, 49, 50, 32, 109}; //2.12 m
+    DWORD address = hs.scan(cmp);
+    std::vector<byte> bytes = hs.readMemory(address, 6);
+    char *text = new char[7];
+    text[6] = '\0';
+    std::copy(bytes.begin(), bytes.end(), text);
+    std::cout << "0x" << std::hex << address << ": " << std::string(text) << std::endl;
 
     //Grab virtual joystick 1
     vJoy vj(1);
