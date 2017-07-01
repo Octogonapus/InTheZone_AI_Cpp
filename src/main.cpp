@@ -99,7 +99,6 @@ Mat extraProcessingRedMobileGoals(RedMobileGoalPipeline pipeline) {
     detector->detect(*pipeline.GetRgbThresholdOutput(), keypoints);
 
     //Remove outlying blobs
-    std::cout << "before: " << keypoints.size() << std::endl;
     for (int i = 0; i < keypoints.size(); i++) {
         Point2f coord = keypoints[i].pt;
         if (coord.x > 730 && coord.y < 25) {
@@ -108,8 +107,6 @@ Mat extraProcessingRedMobileGoals(RedMobileGoalPipeline pipeline) {
             keypoints[i] = KeyPoint();
         }
     }
-    keypoints.shrink_to_fit();
-    std::cout << "after: " << keypoints.size() << std::endl;
 
     Mat image = blankImage.clone();
     drawKeypoints(*pipeline.GetRgbThresholdOutput(), keypoints, image, Scalar(0, 0, 255),
