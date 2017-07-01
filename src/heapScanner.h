@@ -10,9 +10,9 @@
 #include <string>
 #include <array>
 
-class HeapScanner {
+class heapScanner {
 public:
-    HeapScanner(HWND hwnd) :
+    heapScanner(HWND hwnd) :
             m_hwnd(hwnd) {
         GetWindowThreadProcessId(m_hwnd, &m_pid);
         m_pHandle = OpenProcess(PROCESS_VM_READ, 0, m_pid);
@@ -21,18 +21,19 @@ public:
         }
     }
 
-    virtual ~HeapScanner() {}
+    virtual ~heapScanner() {
+        CloseHandle(m_pHandle);
+    }
 
-    DWORD scan(const std::array<byte, 6> &cmp) {
-        DWORD address = 0x035A2000;
-
+    DWORD scan(const std::array<byte, 6> &cmp, DWORD address=0x03500000) {
         while (address < 0x50000000) {
-            std::array<byte, 2000000> buff;
+            std::array<byte, 1000000> buff;
             ReadProcessMemory(m_pHandle, (void *) address, &buff, sizeof(buff), 0);
 
             int i = 0;
-            while (i < buff.size()) {
+            while (i < buff.size() - 6) {
                 if (std::equal(buff.begin() + i, buff.begin() + i + 6, cmp.begin())) {
+                    std::cout << "0x" << std::hex << address + i << ": " << std::string(buff.begin() + i, buff.begin() + i + 6) << std::endl;
                     delete &buff;
                     return address + i;
                 }
@@ -41,7 +42,7 @@ public:
             }
 
             delete &buff;
-            address += 2000000 - 6;
+            address += 1000000 - 6;
         }
 
         return 0;

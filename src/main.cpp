@@ -5,40 +5,19 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <array>
+#include <list>
 
 #include "grip/ConePipeline.h"
 #include "grip/RedMobileGoalPipeline.h"
 #include "grip/BlueMobileGoalPipeline.h"
 #include "vJoy.h"
-#include "HeapScanner.h"
+#include "heapScanner.h"
+#include "guiHelper.h"
 
 using namespace cv;
 using namespace grip;
 
-HWND itzHWND;
-
-BOOL CALLBACK FindTheDesiredWnd(HWND hWnd, LPARAM lParam) {
-    *(reinterpret_cast<HWND *>(lParam)) = hWnd;
-
-    int length = ::GetWindowTextLength(hWnd);
-    if (length == 0) {
-        return TRUE;
-    }
-
-    TCHAR *buf = new TCHAR[length + 1];
-    memset(buf, 0, (length + 1) * sizeof(TCHAR));
-    GetWindowText(hWnd, buf, length + 1);
-    std::string text(buf);
-    if (text.compare("VEX Robotics Competition  - In The Zone RVW") == 0) {
-        itzHWND = hWnd;
-        delete buf;
-        return FALSE;
-    }
-    delete buf;
-    return TRUE;
-}
-
-cv::Mat screencap(HWND hwnd) {
+Mat screencap(HWND hwnd) {
     HDC hwindowDC, hwindowCompatibleDC;
 
     int height, width, srcheight, srcwidth;
@@ -120,14 +99,17 @@ Mat extraProcessingRedMobileGoals(RedMobileGoalPipeline pipeline) {
     detector->detect(*pipeline.GetRgbThresholdOutput(), keypoints);
 
     //Remove outlying blobs
-    for (std::vector<KeyPoint>::reverse_iterator it = keypoints.rbegin(); it != keypoints.rend(); it++) {
-        Point2f coord = it->pt;
+    std::cout << "before: " << keypoints.size() << std::endl;
+    for (int i = 0; i < keypoints.size(); i++) {
+        Point2f coord = keypoints[i].pt;
         if (coord.x > 730 && coord.y < 25) {
-            keypoints.erase(it.base());
+            keypoints[i] = KeyPoint();
         } else if (coord.x < 70 && coord.y > 560) {
-            keypoints.erase(it.base());
+            keypoints[i] = KeyPoint();
         }
     }
+    keypoints.shrink_to_fit();
+    std::cout << "after: " << keypoints.size() << std::endl;
 
     Mat image = blankImage.clone();
     drawKeypoints(*pipeline.GetRgbThresholdOutput(), keypoints, image, Scalar(0, 0, 255),
@@ -180,14 +162,17 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    HeapScanner hs(itzHWND);
-    std::array<byte, 6> cmp {50, 46, 49, 50, 32, 109}; //2.12 m
-    DWORD address = hs.scan(cmp);
-    std::vector<byte> bytes = hs.readMemory(address, 6);
-    char *text = new char[7];
-    text[6] = '\0';
-    std::copy(bytes.begin(), bytes.end(), text);
-    std::cout << "0x" << std::hex << address << ": " << std::string(text) << std::endl;
+//    SetForegroundWindow(itzHWND);
+//    Sleep(1000);
+//    placeWaypoints();
+
+    heapScanner hs(itzHWND);
+    std::array<byte, 6> cmp1{50, 46, 49, 32, 109, 32}; //2.1 m
+    std::array<byte, 6> cmp2{45, 53, 52, 46, 57, 49}; //-54.91
+    std::array<byte, 6> cmp3{43, 57, 57, 46, 57, 49}; //+99.91
+    DWORD wp1d_addr = hs.scan(cmp1);
+    DWORD wp1a_addr = hs.scan(cmp2);
+    DWORD wp2a_addr = hs.scan(cmp3);
 
     //Grab virtual joystick 1
     vJoy vj(1);
@@ -223,7 +208,6 @@ int main(int argc, char **argv) {
 
     //Clean up
     destroyAllWindows();
-    delete &vj;
 
     return 0;
 }
