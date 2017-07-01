@@ -25,7 +25,7 @@ public:
         CloseHandle(m_pHandle);
     }
 
-    DWORD scan(const std::array<byte, 6> &cmp, DWORD address=0x03500000) {
+    DWORD scan(const std::array<byte, 6> &cmp, DWORD address=0x03500000) const {
         while (address < 0x50000000) {
             std::array<byte, 1000000> buff;
             ReadProcessMemory(m_pHandle, (void *) address, &buff, sizeof(buff), 0);
@@ -48,7 +48,7 @@ public:
         return 0;
     }
 
-    std::vector<byte> readMemory(const DWORD address, const unsigned int numBytes) {
+    std::vector<byte> readMemory(const DWORD address, const unsigned int numBytes) const {
         std::vector<byte> buff;
         buff.resize(numBytes);
         std::array<byte, 6> temp;
@@ -58,6 +58,22 @@ public:
         }
         delete &temp;
         return buff;
+    }
+
+    inline float numFromDistanceString(std::vector<byte> bytes) const {
+        if (bytes.at(bytes.size() - 3) == 32) {
+            //"2.1 m "
+            //    ^
+            return std::stof(std::string(bytes.begin(), bytes.end() - 3));
+        } else {
+            //"2.13 m"
+            //     ^
+            return std::stof(std::string(bytes.begin(), bytes.end() - 2));
+        }
+    }
+
+    inline float numFromAngleString(std::vector<byte> bytes) const {
+        return std::stof(std::string(bytes.begin(), bytes.end()));
     }
 
 private:

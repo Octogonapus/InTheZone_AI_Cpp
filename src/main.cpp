@@ -5,7 +5,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <array>
-#include <list>
+#include <cmath>
 
 #include "grip/ConePipeline.h"
 #include "grip/RedMobileGoalPipeline.h"
@@ -151,7 +151,7 @@ Mat extraProcessingBlueMobileGoals(BlueMobileGoalPipeline pipeline) {
 }
 
 int main(int argc, char **argv) {
-    //Try to get hwnd for virtual worlds
+    //Get HWND for Virtual Worlds
     HWND hFoundWnd = NULL;
     ::EnumWindows(&FindTheDesiredWnd, reinterpret_cast<LPARAM>(&hFoundWnd));
     if (hFoundWnd == NULL) {
@@ -163,6 +163,7 @@ int main(int argc, char **argv) {
 //    Sleep(1000);
 //    placeWaypoints();
 
+    //Memory scanner
     heapScanner hs(itzHWND);
     std::array<byte, 6> cmp1{50, 46, 49, 32, 109, 32}; //2.1 m
     std::array<byte, 6> cmp2{45, 53, 52, 46, 57, 49}; //-54.91
@@ -182,13 +183,16 @@ int main(int argc, char **argv) {
     //Main loop
     Mat temp1, temp2;
     do {
+        //Grab frame and convert to 3 channel
         Mat frame = screencap(itzHWND);
         cvtColor(frame, frame, CV_BGRA2BGR);
 
+        //GRIP processing
         conePipeline.Process(frame);
         redMobileGoalPipeline.Process(frame);
         blueMobileGoalPipeline.Process(frame);
 
+        //Extra processing
         std::vector<Mat> images = std::vector<Mat>();
         images.resize(4);
         images[0] = frame;
@@ -196,12 +200,20 @@ int main(int argc, char **argv) {
         images[2] = extraProcessingRedMobileGoals(redMobileGoalPipeline);
         images[3] = extraProcessingBlueMobileGoals(blueMobileGoalPipeline);
 
+        //Localize
+        double r = hs.numFromDistanceString(hs.readMemory(wp1d_addr, 6)); //Already in meters
+        double theta2 = hs.numFromAngleString(hs.readMemory(wp2a_addr, 6)) * 0.0174532925; //Convert to radians
+        double theta1 = hs.numFromAngleString(hs.readMemory(wp1a_addr, 6)) * 0.0174532925; //Convert to radians
+        double x = r * fabs(cos(theta2));
+        double y = x * tan(theta2);
+
+        //Stitch images for final view
         hconcat(images[0], images[1], temp1);
         hconcat(images[2], images[3], temp2);
         vconcat(temp1, temp2, temp2);
         resize(temp2, temp1, Size(960, 720), 0, 0, INTER_AREA);
         imshow("ITZ_AI_CPP", temp1);
-    } while (waitKey(1) != 27);
+    } while (waitKey(1) != 27); //Exit on esc key
 
     //Clean up
     destroyAllWindows();
