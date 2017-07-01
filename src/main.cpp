@@ -10,7 +10,7 @@
 #include "grip/RedMobileGoalPipeline.h"
 #include "grip/BlueMobileGoalPipeline.h"
 #include "vJoy.h"
-#include "heapScanner.h"
+#include "HeapScanner.h"
 #include "guiHelper.h"
 
 using namespace cv;
@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
 //    placeWaypoints();
 
     //Memory scanner
-    heapScanner hs(itzHWND);
+    HeapScanner hs(itzHWND);
     std::array<byte, 6> cmp1{50, 46, 49, 32, 109, 32}; //2.1 m
     std::array<byte, 6> cmp2{45, 53, 52, 46, 57, 49}; //-54.91
     std::array<byte, 6> cmp3{43, 57, 57, 46, 57, 49}; //+99.91

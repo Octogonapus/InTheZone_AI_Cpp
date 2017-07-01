@@ -10,7 +10,7 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 set(GRIP_SOURCE_FILES src/grip/ConePipeline.cpp src/grip/RedMobileGoalPipeline.cpp src/grip/BlueMobileGoalPipeline.cpp)
-set(SOURCE_FILES src/main.cpp src/heapScanner.h src/guiHelper.h)
+set(SOURCE_FILES src/main.cpp src/HeapScanner.h src/guiHelper.h src/HeapScanner.cpp)
 add_executable(itz_ai_cpp ${SOURCE_FILES} ${GRIP_SOURCE_FILES})
 
 set(VJOY_INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}/vJoy_SDK/inc)
