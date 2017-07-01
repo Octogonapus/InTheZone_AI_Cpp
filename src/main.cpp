@@ -99,7 +99,7 @@ Mat extraProcessingRedMobileGoals(RedMobileGoalPipeline pipeline) {
     detector->detect(*pipeline.GetRgbThresholdOutput(), keypoints);
 
     //Remove outlying blobs
-    for (int i = 0; i < keypoints.size(); i++) {
+    for (unsigned int i = 0; i < keypoints.size(); i++) {
         Point2f coord = keypoints[i].pt;
         if (coord.x > 730 && coord.y < 25) {
             keypoints[i] = KeyPoint();

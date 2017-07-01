@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.7)
 project(itz_ai_cpp)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+#-finline-small-functions is broken in MinGW g++ 5.3.0
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -O1")
+
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS}")
 
 find_package(OpenCV REQUIRED)
