@@ -5,7 +5,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <array>
-#include <cmath>
 
 #include "grip/ConePipeline.h"
 #include "grip/RedMobileGoalPipeline.h"
@@ -74,7 +73,7 @@ Mat blankImage = imread("../img/blank.png");
 Mat extraProcessingCones(ConePipeline pipeline) {
     Mat image;
     blankImage.copyTo(image);
-    drawContours(image, *pipeline.GetFilterContoursOutput(), -1, Scalar(0, 230, 230), FILLED);
+    drawContours(image, pipeline.getFilterContoursOutput(), -1, Scalar(0, 230, 230), FILLED);
     return image;
 }
 
@@ -95,8 +94,8 @@ Mat extraProcessingRedMobileGoals(RedMobileGoalPipeline pipeline) {
     Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
 
     std::vector<KeyPoint> keypoints;
-    medianBlur(*pipeline.GetRgbThresholdOutput(), *pipeline.GetRgbThresholdOutput(), 3);
-    detector->detect(*pipeline.GetRgbThresholdOutput(), keypoints);
+    medianBlur(pipeline.getRgbThresholdOutput(), pipeline.getRgbThresholdOutput(), 3);
+    detector->detect(pipeline.getRgbThresholdOutput(), keypoints);
 
     //Remove outlying blobs
     for (unsigned int i = 0; i < keypoints.size(); i++) {
@@ -109,7 +108,7 @@ Mat extraProcessingRedMobileGoals(RedMobileGoalPipeline pipeline) {
     }
 
     Mat image = blankImage.clone();
-    drawKeypoints(*pipeline.GetRgbThresholdOutput(), keypoints, image, Scalar(0, 0, 255),
+    drawKeypoints(pipeline.getRgbThresholdOutput(), keypoints, image, Scalar(0, 0, 255),
                   DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
     return image;
 }
@@ -131,8 +130,8 @@ Mat extraProcessingBlueMobileGoals(BlueMobileGoalPipeline pipeline) {
     Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
 
     std::vector<KeyPoint> keypoints;
-    medianBlur(*pipeline.GetRgbThresholdOutput(), *pipeline.GetRgbThresholdOutput(), 3);
-    detector->detect(*pipeline.GetRgbThresholdOutput(), keypoints);
+    medianBlur(pipeline.getRgbThresholdOutput(), pipeline.getRgbThresholdOutput(), 3);
+    detector->detect(pipeline.getRgbThresholdOutput(), keypoints);
 
     //Remove outlying blobs
     for (std::vector<KeyPoint>::reverse_iterator it = keypoints.rbegin(); it != keypoints.rend(); it++) {
@@ -145,7 +144,7 @@ Mat extraProcessingBlueMobileGoals(BlueMobileGoalPipeline pipeline) {
     }
 
     Mat image = blankImage.clone();
-    drawKeypoints(*pipeline.GetRgbThresholdOutput(), keypoints, image, Scalar(255, 0, 0),
+    drawKeypoints(pipeline.getRgbThresholdOutput(), keypoints, image, Scalar(255, 0, 0),
                   DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
     return image;
 }
@@ -169,8 +168,8 @@ int main(int argc, char **argv) {
     std::array<byte, 6> cmp2{45, 53, 52, 46, 57, 49}; //-54.91
     std::array<byte, 6> cmp3{43, 57, 57, 46, 57, 49}; //+99.91
     DWORD wp1d_addr = hs.scan(cmp1);
-    DWORD wp1a_addr = hs.scan(cmp2);
-    DWORD wp2a_addr = hs.scan(cmp3);
+    DWORD wp1a_addr = hs.scan(cmp2, wp1d_addr);
+    DWORD wp2a_addr = hs.scan(cmp3, wp1d_addr);
 
     //Grab virtual joystick 1
     vJoy vj(1);
@@ -188,9 +187,9 @@ int main(int argc, char **argv) {
         cvtColor(frame, frame, CV_BGRA2BGR);
 
         //GRIP processing
-        conePipeline.Process(frame);
-        redMobileGoalPipeline.Process(frame);
-        blueMobileGoalPipeline.Process(frame);
+        conePipeline.process(frame);
+        redMobileGoalPipeline.process(frame);
+        blueMobileGoalPipeline.process(frame);
 
         //Extra processing
         std::vector<Mat> images = std::vector<Mat>();

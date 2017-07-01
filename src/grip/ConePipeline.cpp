@@ -1,81 +1,80 @@
 #include "ConePipeline.h"
 
 namespace grip {
+    ConePipeline::ConePipeline() {}
 
-    ConePipeline::ConePipeline() {
-    }
-
-/**
-* Runs an iteration of the pipeline and updates outputs.
-*/
-    void ConePipeline::Process(cv::Mat &source0) {
+    /**
+    * Runs an iteration of the pipeline and updates outputs.
+    */
+    void ConePipeline::process(cv::Mat &source0) {
         //Step RGB_Threshold0:
         //input
         cv::Mat rgbThresholdInput = source0;
         double rgbThresholdRed[] = {1.4155343563970746E-14, 255.0};
         double rgbThresholdGreen[] = {34.39748201438849, 255.0};
         double rgbThresholdBlue[] = {0.0, 0.0};
-        rgbThreshold(rgbThresholdInput, rgbThresholdRed, rgbThresholdGreen, rgbThresholdBlue, this->rgbThresholdOutput);
+        rgbThreshold(rgbThresholdInput, rgbThresholdRed, rgbThresholdGreen, rgbThresholdBlue,
+                     this->m_rgbThresholdOutput);
         //Step CV_medianBlur0:
         //input
-        cv::Mat cvMedianblurSrc = rgbThresholdOutput;
-        double cvMedianblurKsize = 5.0;  // default Double
-        cvMedianblur(cvMedianblurSrc, cvMedianblurKsize, this->cvMedianblurOutput);
+        cv::Mat cvMedianblurSrc = m_rgbThresholdOutput;
+        constexpr double cvMedianblurKsize = 5.0;  // default Double
+        cvMedianblur(cvMedianblurSrc, cvMedianblurKsize, this->m_cvMedianblurOutput);
         //Step Find_Contours0:
         //input
-        cv::Mat findContoursInput = cvMedianblurOutput;
-        bool findContoursExternalOnly = true;  // default Boolean
-        findContours(findContoursInput, findContoursExternalOnly, this->findContoursOutput);
+        cv::Mat findContoursInput = m_cvMedianblurOutput;
+        constexpr bool findContoursExternalOnly = true;  // default Boolean
+        findContours(findContoursInput, findContoursExternalOnly, this->m_findContoursOutput);
         //Step Filter_Contours0:
         //input
-        std::vector<std::vector<cv::Point> > filterContoursContours = findContoursOutput;
-        double filterContoursMinArea = 52.0;  // default Double
-        double filterContoursMinPerimeter = 0.0;  // default Double
-        double filterContoursMinWidth = 0.0;  // default Double
-        double filterContoursMaxWidth = 1000.0;  // default Double
-        double filterContoursMinHeight = 0.0;  // default Double
-        double filterContoursMaxHeight = 1000.0;  // default Double
+        std::vector<std::vector<cv::Point> > filterContoursContours = m_findContoursOutput;
+        constexpr double filterContoursMinArea = 52.0;  // default Double
+        constexpr double filterContoursMinPerimeter = 0.0;  // default Double
+        constexpr double filterContoursMinWidth = 0.0;  // default Double
+        constexpr double filterContoursMaxWidth = 1000.0;  // default Double
+        constexpr double filterContoursMinHeight = 0.0;  // default Double
+        constexpr double filterContoursMaxHeight = 1000.0;  // default Double
         double filterContoursSolidity[] = {0, 100};
-        double filterContoursMaxVertices = 1000000.0;  // default Double
-        double filterContoursMinVertices = 0.0;  // default Double
-        double filterContoursMinRatio = 0.0;  // default Double
-        double filterContoursMaxRatio = 1000.0;  // default Double
+        constexpr double filterContoursMaxVertices = 1000000.0;  // default Double
+        constexpr double filterContoursMinVertices = 0.0;  // default Double
+        constexpr double filterContoursMinRatio = 0.0;  // default Double
+        constexpr double filterContoursMaxRatio = 1000.0;  // default Double
         filterContours(filterContoursContours, filterContoursMinArea, filterContoursMinPerimeter,
                        filterContoursMinWidth, filterContoursMaxWidth, filterContoursMinHeight, filterContoursMaxHeight,
                        filterContoursSolidity, filterContoursMaxVertices, filterContoursMinVertices,
-                       filterContoursMinRatio, filterContoursMaxRatio, this->filterContoursOutput);
+                       filterContoursMinRatio, filterContoursMaxRatio, this->m_filterContoursOutput);
     }
 
-/**
- * This method is a generated getter for the output of a RGB_Threshold.
- * @return Mat output from RGB_Threshold.
- */
-    cv::Mat *ConePipeline::GetRgbThresholdOutput() {
-        return &(this->rgbThresholdOutput);
+    /**
+     * This method is a generated getter for the output of a RGB_Threshold.
+     * @return Mat output from RGB_Threshold.
+     */
+    cv::Mat ConePipeline::getRgbThresholdOutput() {
+        return this->m_rgbThresholdOutput;
     }
 
-/**
- * This method is a generated getter for the output of a CV_medianBlur.
- * @return Mat output from CV_medianBlur.
- */
-    cv::Mat *ConePipeline::GetCvMedianblurOutput() {
-        return &(this->cvMedianblurOutput);
+    /**
+     * This method is a generated getter for the output of a CV_medianBlur.
+     * @return Mat output from CV_medianBlur.
+     */
+    cv::Mat ConePipeline::getCvMedianblurOutput() {
+        return this->m_cvMedianblurOutput;
     }
 
-/**
- * This method is a generated getter for the output of a Find_Contours.
- * @return ContoursReport output from Find_Contours.
- */
-    std::vector<std::vector<cv::Point> > *ConePipeline::GetFindContoursOutput() {
-        return &(this->findContoursOutput);
+    /**
+     * This method is a generated getter for the output of a Find_Contours.
+     * @return ContoursReport output from Find_Contours.
+     */
+    std::vector<std::vector<cv::Point>> ConePipeline::getFindContoursOutput() {
+        return this->m_findContoursOutput;
     }
 
-/**
- * This method is a generated getter for the output of a Filter_Contours.
- * @return ContoursReport output from Filter_Contours.
- */
-    std::vector<std::vector<cv::Point> > *ConePipeline::GetFilterContoursOutput() {
-        return &(this->filterContoursOutput);
+    /**
+     * This method is a generated getter for the output of a Filter_Contours.
+     * @return ContoursReport output from Filter_Contours.
+     */
+    std::vector<std::vector<cv::Point>> ConePipeline::getFilterContoursOutput() {
+        return this->m_filterContoursOutput;
     }
 
     /**
@@ -117,7 +116,6 @@ namespace grip {
         cv::findContours(input, contours, hierarchy, mode, method);
     }
 
-
     /**
      * Filters through contours.
      * @param inputContours is the input vector of contours.
@@ -156,7 +154,4 @@ namespace grip {
             output.push_back(contour);
         }
     }
-
-
 } // end grip namespace
-

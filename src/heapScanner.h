@@ -25,19 +25,19 @@ public:
         CloseHandle(m_pHandle);
     }
 
-    DWORD scan(const std::array<byte, 6> &cmp, DWORD address = 0x01000000) const {
-        while (address < 0x50000000) {
+    DWORD scan(const std::array<byte, 6> &cmp, DWORD address = 0x02500000) const {
+        while (address < 0x10000000) {
             std::array<byte, 1000000> buff;
             ReadProcessMemory(m_pHandle, (void *) address, &buff, sizeof(buff), 0);
 
             auto found = std::search(buff.begin(), buff.end(), cmp.begin(), cmp.end());
             if (found < buff.end()) {
-                std::cout << "0x" << std::hex << address + std::distance(buff.begin(), found) << ": " << std::string(found, found + 6) << std::endl;
+                std::cout << "0x" << std::hex << address + std::distance(buff.begin(), found) << ": "
+                          << std::string(found, found + 6) << std::endl;
                 delete &buff;
                 return address + std::distance(buff.begin(), found);
             }
 
-            delete &buff;
             address += 500000;
         }
 
@@ -52,24 +52,35 @@ public:
         for (int i = 0; i < 6; ++i) {
             buff[i] = temp[i];
         }
-        delete &temp;
         return buff;
     }
 
     inline float numFromDistanceString(std::vector<byte> bytes) const {
-        if (bytes.at(bytes.size() - 3) == 32) {
-            //"2.1 m "
-            //    ^
-            return std::stof(std::string(bytes.begin(), bytes.end() - 3));
-        } else {
-            //"2.13 m"
-            //     ^
-            return std::stof(std::string(bytes.begin(), bytes.end() - 2));
+        try {
+            if (bytes.at(bytes.size() - 3) == 32) {
+                //"2.1 m "
+                //    ^
+                return std::stof(std::string(bytes.begin(), bytes.end() - 3));
+            } else {
+                //"2.13 m"
+                //     ^
+                return std::stof(std::string(bytes.begin(), bytes.end() - 2));
+            }
+        } catch (std::invalid_argument e) {
+            std::cerr << "Invalid argument numFromDistanceString: " << bytes.data() << std::endl;
         }
+
+        return 0;
     }
 
     inline float numFromAngleString(std::vector<byte> bytes) const {
-        return std::stof(std::string(bytes.begin(), bytes.end()));
+        try {
+            return std::stof(std::string(bytes.begin(), bytes.end()));
+        } catch (std::invalid_argument e) {
+            std::cerr << "Invalid argument numFromAngleString: " << bytes.data() << std::endl;
+        }
+
+        return 0;
     }
 
 private:

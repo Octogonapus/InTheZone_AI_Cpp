@@ -1,2 +1,5 @@
 cmake-build-debug/
 .idea/
+CMakeFiles/
+cmake-build-release/
+vJoy_SDK/
