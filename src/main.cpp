@@ -206,6 +206,7 @@ int main(int argc, char **argv) {
         double theta1 = hs.numFromAngleString(hs.readMemory(wp1a_addr, 6)) * 0.0174532925; //Convert to radians
         double x = r * fabs(cos(theta2));
         double y = x * tan(theta2);
+//        std::cout << x << "," << y + 1.557599999856 << std::endl;
 
         //Stitch images for final view
         hconcat(images[0], images[1], temp1);

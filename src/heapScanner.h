@@ -25,24 +25,20 @@ public:
         CloseHandle(m_pHandle);
     }
 
-    DWORD scan(const std::array<byte, 6> &cmp, DWORD address=0x03500000) const {
+    DWORD scan(const std::array<byte, 6> &cmp, DWORD address = 0x01000000) const {
         while (address < 0x50000000) {
             std::array<byte, 1000000> buff;
             ReadProcessMemory(m_pHandle, (void *) address, &buff, sizeof(buff), 0);
 
-            int i = 0;
-            while (i < buff.size() - 6) {
-                if (std::equal(buff.begin() + i, buff.begin() + i + 6, cmp.begin())) {
-                    std::cout << "0x" << std::hex << address + i << ": " << std::string(buff.begin() + i, buff.begin() + i + 6) << std::endl;
-                    delete &buff;
-                    return address + i;
-                }
-
-                i++;
+            auto found = std::search(buff.begin(), buff.end(), cmp.begin(), cmp.end());
+            if (found < buff.end()) {
+                std::cout << "0x" << std::hex << address + std::distance(buff.begin(), found) << ": " << std::string(found, found + 6) << std::endl;
+                delete &buff;
+                return address + std::distance(buff.begin(), found);
             }
 
             delete &buff;
-            address += 1000000 - 6;
+            address += 500000;
         }
 
         return 0;
